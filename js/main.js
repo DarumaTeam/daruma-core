@@ -4,6 +4,7 @@ window.addEventListener("load", async () => {
   const port = i2cAccess.ports.get(1);
   const motor = new DRV8830(port, 0x64);
   await motor.init();
+  let isRage = false;
 
   const sendMessage = object => {
     socket.send(JSON.stringify(object));
@@ -23,7 +24,7 @@ window.addEventListener("load", async () => {
   };
   const speak = message => {
     sendMessage({
-      type: "voice",
+      type: "message",
       message: message
     });
   };
@@ -41,8 +42,8 @@ window.addEventListener("load", async () => {
     }
   }, 100);
 
-  socket.onmessgae = message => {
-    const data = JSON.parse(message);
+  socket.onmessage = message => {
+    const data = JSON.parse(message.data);
     if (data.type !== "status") {
       return;
     }
@@ -57,16 +58,38 @@ window.addEventListener("load", async () => {
     }
   };
 
-  // TODO
+  const asyncTextGenerater = function* (...asyncTexts) {
+    for (const asyncText of asyncTexts) {
+      yield asyncText;
+    }
+  };
+
   const darumaAbareru = async () => {
-    // example
-    stop();
-    await sleep(200);
-    drive(100);
-    speak("動いた");
+    isRage = true;
+    while (isRage) {
+      const asyncFunctions = asyncTextGenerater(
+        `speak("乾いた")`,
+        "sleep(100)",
+        "drive(20)",
+        "sleep(600)",
+        `speak("乾いた")`,
+        "drive(10)",
+        "sleep(700)"
+      );
+
+      for (const asyncFunction of asyncFunctions) {
+        if (isRage) {
+          await eval(asyncFunction);
+        } else {
+          break;
+        }
+      }
+      await sleep(0);
+    }
   };
 
   const darumaTomaru = () => {
+    isRage = false;
     stop();
   };
 });
